@@ -1,3 +1,5 @@
+package gui;
+
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
@@ -9,12 +11,21 @@ import java.util.Locale;
 
 public class POSApp extends JFrame implements ActionListener {
 
+    // Constants
+    private static final String ERROR_TITLE = "Error";
+    private static final String INFO_TITLE = "Info";
+    
     // --- Komponen GUI ---
-    private JTable productTable, cartTable;
-    private DefaultTableModel productModel, cartModel;
-    private JButton addToCartButton, checkoutButton, printButton;
-    private JTextField qtyField, paymentField;
-    private JLabel totalLabel, selectedProductLabel;
+    private JTable productTable;
+    private DefaultTableModel productModel;
+    private DefaultTableModel cartModel;
+    private JButton addToCartButton;
+    private JButton checkoutButton;
+    private JButton printButton;
+    private JTextField qtyField;
+    private JTextField paymentField;
+    private JLabel totalLabel;
+    private JLabel selectedProductLabel;
     private JTextArea receiptArea;
 
     // --- Data ---
@@ -26,12 +37,12 @@ public class POSApp extends JFrame implements ActionListener {
      */
     public POSApp() {
         // Inisialisasi formatter mata uang (Rupiah)
-        currencyFormatter = NumberFormat.getCurrencyInstance(new Locale("id", "ID"));
+        currencyFormatter = NumberFormat.getCurrencyInstance(Locale.forLanguageTag("id-ID"));
 
         // 1. Pengaturan JFrame Utama
         setTitle("POIN Off-Sales - Java Swing");
         setSize(1000, 700);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setLocationRelativeTo(null); // Tampilkan di tengah layar
 
         // 2. Membuat Menu Bar
@@ -79,7 +90,7 @@ public class POSApp extends JFrame implements ActionListener {
     private JPanel createLeftPanel() {
         JPanel leftPanel = new JPanel(new BorderLayout(5, 5));
         leftPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        leftPanel.add(new JLabel("Produk", JLabel.CENTER), BorderLayout.NORTH);
+        leftPanel.add(new JLabel("Produk", SwingConstants.CENTER), BorderLayout.NORTH);
 
         // Data untuk tabel produk (sesuai gambar)
         String[] productColumns = {"ID", "Nama Produk", "Harga (Rp)"};
@@ -132,11 +143,11 @@ public class POSApp extends JFrame implements ActionListener {
 
         // Panel atas untuk keranjang
         JPanel cartPanel = new JPanel(new BorderLayout());
-        cartPanel.add(new JLabel("Keranjang", JLabel.CENTER), BorderLayout.NORTH);
+        cartPanel.add(new JLabel("Keranjang", SwingConstants.CENTER), BorderLayout.NORTH);
 
         String[] cartColumns = {"ID", "Nama Produk", "Qty", "Harga", "Subtotal"};
         cartModel = new DefaultTableModel(null, cartColumns); // Awalnya kosong
-        cartTable = new JTable(cartModel);
+        JTable cartTable = new JTable(cartModel);
         
         // Buat JScrollPane lebih tinggi
         JScrollPane cartScrollPane = new JScrollPane(cartTable);
@@ -205,7 +216,7 @@ public class POSApp extends JFrame implements ActionListener {
         if (selectedRow == -1) {
             JOptionPane.showMessageDialog(this,
                     "Silakan pilih produk dari tabel terlebih dahulu.",
-                    "Error", JOptionPane.ERROR_MESSAGE);
+                    ERROR_TITLE, JOptionPane.ERROR_MESSAGE);
             return;
         }
 
@@ -215,7 +226,7 @@ public class POSApp extends JFrame implements ActionListener {
             if (qty <= 0) {
                 JOptionPane.showMessageDialog(this,
                         "Kuantitas (Qty) harus lebih dari 0.",
-                        "Error", JOptionPane.ERROR_MESSAGE);
+                        ERROR_TITLE, JOptionPane.ERROR_MESSAGE);
                 return;
             }
 
@@ -237,11 +248,11 @@ public class POSApp extends JFrame implements ActionListener {
             productTable.clearSelection();
             selectedProductLabel.setText("Pilih produk dari tabel di atas");
 
-        } catch (NumberFormatException ex) {
+        } catch (NumberFormatException _) {
             // Tangkap jika Qty bukan angka
             JOptionPane.showMessageDialog(this,
                     "Kuantitas (Qty) harus berupa angka.",
-                    "Error", JOptionPane.ERROR_MESSAGE);
+                    ERROR_TITLE, JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -252,7 +263,7 @@ public class POSApp extends JFrame implements ActionListener {
         // 1. Validasi: Pastikan ada barang di keranjang
         if (cartModel.getRowCount() == 0) {
             JOptionPane.showMessageDialog(this,
-                    "Keranjang masih kosong.", "Error", JOptionPane.ERROR_MESSAGE);
+                    "Keranjang masih kosong.", ERROR_TITLE, JOptionPane.ERROR_MESSAGE);
             return;
         }
 
@@ -264,7 +275,7 @@ public class POSApp extends JFrame implements ActionListener {
             if (payment < currentTotal) {
                 JOptionPane.showMessageDialog(this,
                         "Jumlah uang bayar tidak mencukupi.",
-                        "Error", JOptionPane.ERROR_MESSAGE);
+                        ERROR_TITLE, JOptionPane.ERROR_MESSAGE);
                 return;
             }
 
@@ -280,10 +291,10 @@ public class POSApp extends JFrame implements ActionListener {
             updateTotalLabel();
             paymentField.setText("");
 
-        } catch (NumberFormatException ex) {
+        } catch (NumberFormatException _) {
             JOptionPane.showMessageDialog(this,
                     "Jumlah bayar harus berupa angka.",
-                    "Error", JOptionPane.ERROR_MESSAGE);
+                    ERROR_TITLE, JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -299,7 +310,7 @@ public class POSApp extends JFrame implements ActionListener {
         sb.append("Toko: Dèmo Toko\n");
         sb.append("==========================\n");
         // Header Tabel Struk
-        sb.append(String.format("%-5s %-15s %-3s %-10s\n", "ID", "Nama", "Qty", "Subtotal"));
+        sb.append(String.format("%-5s %-15s %-3s %-10s%n", "ID", "Nama", "Qty", "Subtotal"));
         sb.append("--------------------------\n");
 
         // Loop isi keranjang
@@ -310,17 +321,17 @@ public class POSApp extends JFrame implements ActionListener {
             double sub = (Double) cartModel.getValueAt(i, 4);
 
             // Batasi nama agar tidak merusak layout
-            if (name.length() > 15) name = name.substring(0, 14) + ".";
+            String displayName = name.length() > 15 ? name.substring(0, 14) + "." : name;
 
-            sb.append(String.format("%-5s %-15s %-3d %-10s\n",
-                    id, name, qty, currencyFormatter.format(sub)));
+            sb.append(String.format("%-5s %-15s %-3d %-10s%n",
+                    id, displayName, qty, currencyFormatter.format(sub)));
         }
 
         sb.append("==========================\n");
-        sb.append(String.format("TOTAL       : %s\n", currencyFormatter.format(currentTotal)));
-        sb.append(String.format("BAYAR       : %s\n", currencyFormatter.format(payment)));
-        sb.append(String.format("KEMBALI     : %s\n", currencyFormatter.format(change)));
-        sb.append("\nTerima kasih, Silakan kunjungi kembali.\n");
+        sb.append(String.format("TOTAL       : %s%n", currencyFormatter.format(currentTotal)));
+        sb.append(String.format("BAYAR       : %s%n", currencyFormatter.format(payment)));
+        sb.append(String.format("KEMBALI     : %s%n", currencyFormatter.format(change)));
+        sb.append(System.lineSeparator()).append("Terima kasih, Silakan kunjungi kembali.").append(System.lineSeparator());
 
         receiptArea.setText(sb.toString());
     }
@@ -334,7 +345,7 @@ public class POSApp extends JFrame implements ActionListener {
             if (receiptArea.getText().isEmpty()) {
                 JOptionPane.showMessageDialog(this,
                         "Struk masih kosong, lakukan checkout terlebih dahulu.",
-                        "Error", JOptionPane.ERROR_MESSAGE);
+                        ERROR_TITLE, JOptionPane.ERROR_MESSAGE);
                 return;
             }
             
@@ -342,15 +353,15 @@ public class POSApp extends JFrame implements ActionListener {
             boolean complete = receiptArea.print();
             if (complete) {
                 JOptionPane.showMessageDialog(this,
-                        "Mencetak...", "Info", JOptionPane.INFORMATION_MESSAGE);
+                        "Mencetak...", INFO_TITLE, JOptionPane.INFORMATION_MESSAGE);
             } else {
                 JOptionPane.showMessageDialog(this,
-                        "Proses cetak dibatalkan.", "Info", JOptionPane.INFORMATION_MESSAGE);
+                        "Proses cetak dibatalkan.", INFO_TITLE, JOptionPane.INFORMATION_MESSAGE);
             }
         } catch (PrinterException ex) {
             JOptionPane.showMessageDialog(this,
                     "Gagal mencetak: " + ex.getMessage(),
-                    "Error", JOptionPane.ERROR_MESSAGE);
+                    ERROR_TITLE, JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -365,9 +376,6 @@ public class POSApp extends JFrame implements ActionListener {
      * Main method untuk menjalankan aplikasi.
      */
     public static void main(String[] args) {
-        // Menjalankan GUI di Event Dispatch Thread (Best Practice Swing)
-        SwingUtilities.invokeLater(() -> {
-            new POSApp().setVisible(true);
-        });
+        SwingUtilities.invokeLater(() -> new POSApp().setVisible(true));
     }
 }
